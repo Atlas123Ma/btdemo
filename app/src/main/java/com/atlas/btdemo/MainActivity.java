@@ -20,6 +20,8 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Method;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
@@ -35,15 +37,23 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private  static final int MSG_SCAN = 0;
     private  static final int MSG_PAIR = 1;
     private  static final int MSG_CONNECT = 2;
+    private  static final int MSG_START_PLAYPCM = 3;
+    private static final int MSG_STOP_PLAYPCM = 4;
     private  static final int DELAYT_TIMES = 500;
     private BtReceiver mBtReceiver = null;
     private BluetoothDevice mTargetDevice = null;
     private BluetoothProfile mBluetoothA2dpProfile = null;
+    private MusicPlayer mMusicPlayer = null;
+    private static final String PCM_PATH = "";
     @SuppressLint("HandlerLeak")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        mMusicPlayer = new MusicPlayer();
+//        playPcm(PCM_PATH);
+
 
         mHandler = new Handler(){
             @Override
@@ -58,6 +68,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             break;
                         case MSG_CONNECT:
                             connectDevice();
+                            break;
+                        case MSG_START_PLAYPCM:
+                            mMusicPlayer.startPlay(getApplicationContext());
+                            break;
+                        case MSG_STOP_PLAYPCM:
+                            mMusicPlayer.stopPlay();
                             break;
                         default:
                             break;
@@ -126,6 +142,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 initProfileProxy();
                 Log.d(TAG, "start bt connect");
                 mHandler.sendEmptyMessageDelayed(MSG_CONNECT, DELAYT_TIMES);
+                break;
+            case R.id.bt_playpcm:
+                if(mMusicPlayer != null && mMusicPlayer.isMusicPlaying()) {
+                    Log.d(TAG, "music is playing");
+//                    mHandler.sendEmptyMessage(MSG_START_PLAYPCM);
+                    mHandler.sendEmptyMessageDelayed(MSG_STOP_PLAYPCM, DELAYT_TIMES);
+                } else {
+                    Log.d(TAG, "music play has stopped");
+//                    mHandler.sendEmptyMessage(MSG_STOP_PLAYPCM);
+                    mHandler.sendEmptyMessageDelayed(MSG_START_PLAYPCM, DELAYT_TIMES);
+                }
                 break;
             default:
                 break;
@@ -203,6 +230,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         + preConnectionState + ", newConnectionState" + newConnectionState);
                 if(newConnectionState == BluetoothProfile.STATE_CONNECTED && preConnectionState == BluetoothProfile.STATE_CONNECTING) {
                     Log.d(TAG, "target device connect success");
+                    if(mMusicPlayer != null && mMusicPlayer.isMusicPlaying()) {
+                        Log.d(TAG, "music is playing");
+//                        mHandler.sendEmptyMessage(MSG_START_PLAYPCM);
+                        mHandler.sendEmptyMessageDelayed(MSG_STOP_PLAYPCM, DELAYT_TIMES);
+                    } else {
+                        Log.d(TAG, "music play has stopped");
+//                        mHandler.sendEmptyMessage(MSG_STOP_PLAYPCM);
+                        mHandler.sendEmptyMessageDelayed(MSG_START_PLAYPCM,DELAYT_TIMES);
+                    }
                 }
             }
         }
@@ -259,4 +295,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             Log.d(TAG, "onServiceDisconnected, profile = " + profile);
         }
     };
+
+
 }
